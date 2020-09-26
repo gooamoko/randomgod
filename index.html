@@ -1,0 +1,79 @@
+<html>
+    <head>
+        <script src="dist/vue.js"></script>
+        <script src="dist/axios.min.js"></script>
+        <link rel="stylesheet" type="text/css" href="style.css"/>
+        <title>Random God</title>
+    </head>
+    <h1>Random God</h1>
+    <div id="askme" class="question-panel">
+        <table id="hbox"><tr>
+                <td id="hbox-history">
+                    <div id="question">
+                        <p>Задайте вопрос, на который можно ответить «да» или «нет»:</p>
+                        <p><textarea id="question-text" v-model="question" v-on:keyup.ctrl.enter="getAnswer" rows="4"></textarea></p>
+                        <p class="buttons"><input class="ask-button" type="button" v-on:click="getAnswer" value="Спросить"></p>
+                    </div>
+                    <div id="history">
+                        <p align="center">История вопросов</p>
+                        <history-item v-for="item in history" v-bind:key="item.key" v-bind:history="item">
+                            <div class="history-q">{{item.question}}</div>
+                            <div class="history-a">{{item.answer}}</div>
+                        </history-item>
+                    </div>
+                </td>
+                <td id="hbox-picture">
+                    <div id="picture">
+                        <img v-bind:src="url" v-if="url"></img>
+                    </div>
+                </td>
+            </tr></table>
+    </div>
+
+    <script>
+var vm = new Vue({
+    el: '#askme',
+    data: {
+        question: '',
+        answer: '',
+        url: '',
+        history: new Array()
+    },
+    methods: {
+        getAnswer: function () {
+            if (!this.question || !this.question.trim()) {
+                return;
+            }
+            if (this.question.indexOf('?') === -1) {
+                this.answer = 'Вопросы обычно заканчиваются вопросительным знаком.';
+                return;
+            }
+            this.answer = 'Хм...';
+            this.url = '';
+            var vm = this;
+            axios.get('https://yesno.wtf/api')
+                    .then(function (response) {
+                        vm.answer = response.data.answer;
+                        vm.url = response.data.image;
+                        vm.history.push(new HistoryItem(vm.history.length, vm.question, response.data.answer));
+                        vm.question = '';
+                    })
+                    .catch(function (error) {
+                        vm.answer = 'Затрудняюсь ответить.';
+                    });
+        }
+    }
+});
+
+function HistoryItem(key, question, answer) {
+    this.key = key;
+    this.question = question;
+    this.answer = answer;
+}
+
+Vue.component('history-item', {
+    props: ['history'],
+    template: '<div class="history-item"><div class="history-q">{{history.question}}</div><div class="history-a">{{history.answer}}</div></div>'
+});
+    </script>
+</html>
